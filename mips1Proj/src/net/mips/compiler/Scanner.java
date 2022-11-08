@@ -1,231 +1,191 @@
 package net.mips.compiler;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+
 
 public class Scanner {
-	
-	List<Symboles> motsCles;
-	private Symboles SymbCour;
-	private char carCour;
-	private FileReader fluxSour;
-	static final int EOF = '\0';
-	
-	Scanner(String f) throws ErreurLexicale,IOException
-	{
-		File file = new File(f);
-		
-		if(!file.exists()) {
-			System.out.println("le fichier not exist");
-		    throw new ErreurLexicale(CodesErr.FIC_VIDE_ERR);
-		}
-		    
-		else {
-			System.out.println("fichier exist");
-		}
-	}
-	
-	Scanner(FileReader f, List<Symboles>m) {
-		this.fluxSour = f;
-		this.motsCles = m;
-	}
-	
-	public List<Symboles> getmotsCles() {
-		return this.motsCles;
-	}
-	
-	public void setmotsCles(List<Symboles>m) {
-		this.motsCles = m;
-	}
-	
-	public char getcarCour() {
-		return this.carCour;
-	}
-	
-	public void setcarCour(char car) {
-		this.carCour = car;
-	}
-	
-	public FileReader getfluxSour() {
-		return this.fluxSour;
-	}
-	
-	public void setfluxSour(FileReader f) {
-		this.fluxSour = f;
-	}
-	
-	public Symboles getSymbCour() {
-		return SymbCour;
-	}
-	
-	public void setSymCour(Symboles symbCour) {
-		SymbCour = symbCour;
-	}
-	
-	public void initMotsCles( ) {
-		motsCles.add(new Symboles(Tokens.PROGRAM_TOKEN,"program"));
-		motsCles.add(new Symboles(Tokens.CONST_TOKEN,"const"));
-		motsCles.add(new Symboles(Tokens.VAR_TOKEN,"var"));
-		motsCles.add(new Symboles(Tokens.BEGIN_TOKEN,"begin"));
-		motsCles.add(new Symboles(Tokens.END_TOKEN,"end"));
-		motsCles.add(new Symboles(Tokens.IF_TOKEN,"if"));
-		motsCles.add(new Symboles(Tokens.THEN_TOKEN,"then"));
-		motsCles.add(new Symboles(Tokens.WHILE_TOKEN,"while"));
-		motsCles.add(new Symboles(Tokens.DO_TOKEN,"do"));
-		motsCles.add(new Symboles(Tokens.WRITE_TOKEN,"write"));
-		motsCles.add(new Symboles(Tokens.READ_TOKEN,"read"));
-	}
-	
-	public void codageLex() {
-		String nom = SymbCour.getNom();
-		for(Symboles symb:motsCles) {
-			String nom1 = symb.getNom();
-			if(nom.equalsIgnoreCase(nom1)) {
-				SymbCour.setToken(symb.getToken());
-				return;
-			}
-		}
-		SymbCour.setToken(Tokens.ID_TOKEN);
-	}
-	
-	public void LireCar() throws IOException{
-		if(fluxSour.ready())
-			carCour = (char) fluxSour .read();
-		else
-			carCour = EOF;
-	}
-	
-	public void LireMot() throws IOException{
-		SymbCour.setNom(SymbCour.getNom()+carCour);
-		LireCar();
-		while(Character.isLetterOrDigit(carCour)) {
-			SymbCour.setNom(SymbCour.getNom()+carCour);
-			LireCar();
-		}
-		codageLex();
-	}
-	public void LireNombre() throws IOException {
-		SymbCour.setNom(SymbCour.getNom()+carCour);
-		LireCar();
-		while(Character.isDigit(carCour)) {
-			SymbCour.setNom(SymbCour.getNom()+carCour);
-			LireCar();
-		}
-		SymbCour.setToken(Tokens.NUM_TOKEN);
-	}
-	
-	public void symbSuiv() throws IOException, ErreurCompilation {
-		SymbCour=new Symboles();
-		while(Character.isWhitespace(carCour))
-			LireCar();
-		if (Character.isLetter(carCour)) {
-			LireMot();
-			return;
-		}
-		if(Character.isDigit(carCour)) {
-			LireNombre();
-			return;
-		}
-		switch(carCour) {
-		case '+':
-			SymbCour.setToken(Tokens.PLUS_TOKEN);
-			LireCar();
-			break;
-		case '-':
-			SymbCour.setToken(Tokens.MOINS_TOKEN);
-			LireCar();
-			break;
-		case '*':
-			SymbCour.setToken(Tokens.MUL_TOKEN);
-			LireCar();
-			break;
-		case '/':
-			SymbCour.setToken(Tokens.DIV_TOKEN);
-			LireCar();
-			break;
-		case '(':
-			SymbCour.setToken(Tokens.PARG_TOKEN);
-			LireCar();
-			break;
-		case ')':
-			SymbCour.setToken(Tokens.PARD_TOKEN);
-			LireCar();
-			break;
-		case '.':
-			SymbCour.setToken(Tokens.PNT_TOKEN);
-			LireCar();
-			break;
-		case ',':
-			SymbCour.setToken(Tokens.VIR_TOKEN);
-			LireCar();
-			break;
-		case ';':
-			SymbCour.setToken(Tokens.PVIR_TOKEN);
-			LireCar();
-			break;
-		case '=':
-			SymbCour.setToken(Tokens.EG_TOKEN);
-			LireCar();
-			break;
-		case EOF:
-			SymbCour.setToken(Tokens.EOF_TOKEN);
-			break;
-		case ':':
-			LireCar();
-			switch(carCour) {
-			case '=':
-				SymbCour.setToken(Tokens.AFFEC_TOKEN);
-				LireCar();
-				break;
-			default:
-				SymbCour.setToken(Tokens.ERR_TOKEN);
-				throw new ErreurLexicale(CodesErr.CAR_INC_ERR);
-			}
-			break;
-		case '>':
-			LireCar();
-			switch(carCour) {
-			case '=':
-				SymbCour.setToken(Tokens.SUPEG_TOKEN);
-				LireCar();
-				break;
-			default:
-				SymbCour.setToken(Tokens.SUP_TOKEN);
-				break;
-			}
-			break;
-		case '<':
-			LireCar();
-			switch(carCour) {
-			case '=':
-				SymbCour.setToken(Tokens.INFEG_TOKEN);
-				LireCar();
-				break;
-			case '>':
-				SymbCour.setToken(Tokens.DIV_TOKEN);
-				LireCar();
-				break;
-			default:
-				SymbCour.setToken(Tokens.INF_TOKEN);
-				break;
-			}
-			break;
-		default:
-			throw new ErreurLexicale(CodesErr.CAR_INC_ERR);
-		}
-		
-			
-	}
-	
-	public static void main(String args[]) 
-		throws IOException, ErreurCompilation {
-		Scanner scanner=new Scanner("test1");
-		scanner.initMotsCles();
-		scanner.LireCar();
-		while(scanner.getcarCour()!=EOF) {
-			scanner.symbSuiv();
-			System.out.println(scanner.getSymbCour().getToken());
-		}
-	}
+    private List<Symboles> motsCles;
+    private Symboles symbCour;
+    private char carCour;
+    private FileReader fluxSour;
 
+    public final static int EOF ='\uffff';
+
+    public Scanner(String filename) throws FileNotFoundException {
+        File f = new File(filename);
+        if (!f.exists()){
+            System.out.println(CodesErr.FIC_VID_ERR.getMessage());
+        }
+        this.fluxSour = new FileReader(f);
+        this.motsCles = new ArrayList<>();
+        this.symbCour= new Symboles();
+    }
+    public void initMotsCles(){
+        this.motsCles.add(new Symboles(Tokens.BEGIN_TOKEN,"begin"));
+        this.motsCles.add(new Symboles(Tokens.END_TOKEN,"end"));
+        this.motsCles.add(new Symboles(Tokens.IF_TOKEN,"if"));
+        this.motsCles.add(new Symboles(Tokens.WHILE_TOKEN,"while"));
+        this.motsCles.add(new Symboles(Tokens.DO_TOKEN,"do"));
+        this.motsCles.add(new Symboles(Tokens.THEN_TOKEN,"then"));
+        this.motsCles.add(new Symboles(Tokens.WRITE_TOKEN,"write"));
+        this.motsCles.add(new Symboles(Tokens.READ_TOKEN,"read"));
+        this.motsCles.add(new Symboles(Tokens.CONST_TOKEN,"const"));
+        this.motsCles.add(new Symboles(Tokens.VAR_TOKEN,"var"));
+        this.motsCles.add(new Symboles(Tokens.PROGRAM_TOKEN,"program"));
+        this.motsCles.add(new Symboles(Tokens.ERR_TOKEN,"err"));
+    }
+
+    public void codeLex(String mot){
+        for (Symboles sym : motsCles){
+            if(sym.getNom().toLowerCase().equals(mot)){
+                this.symbCour.setToken(sym.getToken());
+                return;
+            }
+        }
+        this.symbCour.setToken(Tokens.ID_TOKEN);
+    }
+    public void lireCar() throws IOException {
+       this.carCour = (char)this.fluxSour.read();
+    }
+    public void lireMot() throws IOException {
+        do{
+            this.symbCour.setNom(this.symbCour.getNom()+this.carCour);
+            lireCar();
+        }while(Character.isLetterOrDigit(this.carCour) );
+        codeLex(this.symbCour.getNom());
+    }
+
+    public void lireNumber() throws IOException {
+        while(Character.isLetterOrDigit(this.carCour)){
+            this.symbCour.setNom(this.symbCour.getNom()+this.carCour);
+            lireCar();
+            if(Character.isLetter(this.carCour)){
+                lireMot();
+                return;
+            }
+
+        }
+        this.symbCour.setToken(Tokens.NUM_TOKEN);
+    }
+public void  symSuivant() throws IOException {
+            this.symbCour=new Symboles();
+
+            while (Character.isWhitespace(this.carCour)) {
+                lireCar();
+            }
+            if (Character.isDigit(this.carCour)) {
+                lireNumber();
+                return;
+            }
+            if (Character.isLetterOrDigit(this.carCour)) {
+                lireMot();
+                return;
+            }
+            switch (this.carCour){
+                case '+':this.symbCour.setNom("+");
+                this.symbCour.setToken(Tokens.PLUS_TOKEN);
+                    lireCar();
+                break;
+                case '=':this.symbCour.setNom("=");
+                    this.symbCour.setToken(Tokens.AFFEC_TOKEN);
+                    lireCar();
+                    break;
+                case ';':this.symbCour.setNom(";");
+                    this.symbCour.setToken(Tokens.PVIR_TOKEN);
+                    lireCar();
+                    break;
+                case '{':this.symbCour.setNom("{");
+                    this.symbCour.setToken(Tokens.BRL_TOKEN);
+                    lireCar();
+                    break;
+                case '}':this.symbCour.setNom("}");
+                    this.symbCour.setToken(Tokens.BRR_TOKEN);
+                    lireCar();
+                    break;
+
+                case '-':this.symbCour.setNom("-");
+                    this.symbCour.setToken(Tokens.MOINS_TOKEN);
+                    lireCar();
+                    break;
+                case '*':this.symbCour.setNom("*");
+                    this.symbCour.setToken(Tokens.MUL_TOKEN);
+                    lireCar();
+                    break;
+                case '/':this.symbCour.setNom("/");
+                    this.symbCour.setToken(Tokens.DIV_TOKEN);
+                    lireCar();
+                    break;
+                case '<':this.symbCour.setNom("<");
+                    this.symbCour.setToken(Tokens.INF_TOKEN);
+                    lireCar();
+                    break;
+                case '>':this.symbCour.setNom(">");
+                    this.symbCour.setToken(Tokens.SUP_TOKEN);
+                    lireCar();
+                    break;
+                case ',':this.symbCour.setNom(",");
+                    this.symbCour.setToken(Tokens.VIR_TOKEN);
+                    lireCar();
+                    break;
+                case '.' :this.symbCour.setNom(".");
+                    this.symbCour.setToken(Tokens.PNT_TOKEN);
+                    lireCar();
+                    break;
+                case '(':this.symbCour.setNom("(");
+                    this.symbCour.setToken(Tokens.PARG_TOKEN);
+                    lireCar();
+                    break;
+
+                    case ')':this.symbCour.setNom(")");
+                    this.symbCour.setToken(Tokens.PARD_TOKEN);
+                        lireCar();
+                    break;
+                case (char) EOF :
+                    this.symbCour.setNom("EOF");
+                    this.symbCour.setToken(Tokens.EOF_TOKEN);
+                    break;
+
+            }
+        }
+
+
+    public List<Symboles> getMotsCles() {
+        return motsCles;
+    }
+
+    public void setMotsCles(List<Symboles> motsCles) {
+        this.motsCles = motsCles;
+    }
+
+    public Symboles getSymbCour() {
+        return symbCour;
+    }
+
+    public void setSymbCour(Symboles symbCour) {
+        this.symbCour = symbCour;
+    }
+
+    public char getCarCour() {
+        return carCour;
+    }
+
+    public void setCarCour(char carCour) {
+        this.carCour = carCour;
+    }
+
+    public FileReader getFluxSour() {
+        return fluxSour;
+    }
+
+    public void setFluxSour(FileReader fluxSour) {
+        this.fluxSour = fluxSour;
+    }
 }
